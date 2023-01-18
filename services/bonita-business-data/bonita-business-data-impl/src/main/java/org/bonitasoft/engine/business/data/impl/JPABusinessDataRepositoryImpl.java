@@ -87,9 +87,18 @@ public class JPABusinessDataRepositoryImpl implements BusinessDataRepository, Si
         this.log = loggerService.asLogger(getClass());
         this.classLoaderService = classLoaderService;
         this.tenantId = tenantId;
+
         this.configuration = new HashMap<>(configuration);
         this.configuration.put("hibernate.archive.scanner", DisabledScanner.class.getName());
+        this.configuration.put("hibernate.cache.use_second_level_cache", "true");
+        this.configuration.put("hibernate.cache.use_query_cache", "true");
+        this.configuration.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory");
+        this.configuration.put("hibernate.cache.default_cache_concurrency_strategy",  "read-write");
+        this.configuration.put("javax.persistence.sharedCache.mode", "ALL");
+
+
         classLoaderService.addListener(identifier(ScopeType.TENANT, tenantId), this);
+        System.out.println("BDM JPA configuration: " + this.configuration) ;
     }
 
     @Override
@@ -230,7 +239,7 @@ public class JPABusinessDataRepositoryImpl implements BusinessDataRepository, Si
             final CriteriaQuery<T> criteriaQuery = cb.createQuery(entityClass);
             final Root<T> row = criteriaQuery.from(entityClass);
             criteriaQuery.select(row).where(row.get(Field.PERSISTENCE_ID).in(primaryKeys));
-            return em.createQuery(criteriaQuery).getResultList();
+            return em.createQuery(criteriaQuery).setHint("org.hibernate.cacheable", Boolean.TRUE).getResultList();
         } catch (final PersistenceException e) {
             //wrap in retryable exception because the issue might come from BDR reloading
             throw new SRetryableException(e);
@@ -265,6 +274,7 @@ public class JPABusinessDataRepositoryImpl implements BusinessDataRepository, Si
             }
         }
         try {
+            query.setHint("org.hibernate.cacheable", Boolean.TRUE);
             return query.getSingleResult();
         } catch (final javax.persistence.NonUniqueResultException nure) {
             throw new NonUniqueResultException(nure);
@@ -356,6 +366,7 @@ public class JPABusinessDataRepositoryImpl implements BusinessDataRepository, Si
             }
             query.setFirstResult(startIndex);
             query.setMaxResults(maxResults);
+            query.setHint("org.hibernate.cacheable", Boolean.TRUE);
             return query.getResultList();
         }
         return Collections.emptyList();
@@ -423,3 +434,4 @@ public class JPABusinessDataRepositoryImpl implements BusinessDataRepository, Si
         }
     }
 }
+

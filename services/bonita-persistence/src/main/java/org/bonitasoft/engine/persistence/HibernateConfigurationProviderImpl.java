@@ -142,7 +142,7 @@ public class HibernateConfigurationProviderImpl implements HibernateConfiguratio
     }
 
     protected void applyCacheMode(MetadataBuilder metadataBuilder) {
-        metadataBuilder.applySharedCacheMode(SharedCacheMode.NONE);
+        metadataBuilder.applySharedCacheMode(SharedCacheMode.ENABLE_SELECTIVE);
     }
 
     protected Properties gatherAllProperties(Properties extraHibernateProperties,
@@ -174,3 +174,4 @@ public class HibernateConfigurationProviderImpl implements HibernateConfiguratio
     }
 
 }
+

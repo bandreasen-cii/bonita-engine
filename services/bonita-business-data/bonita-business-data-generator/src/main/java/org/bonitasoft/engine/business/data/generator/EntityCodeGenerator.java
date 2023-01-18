@@ -39,6 +39,8 @@ import org.bonitasoft.engine.bdm.model.field.RelationField;
 import org.bonitasoft.engine.bdm.model.field.SimpleField;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +75,9 @@ public class EntityCodeGenerator {
 
         final JAnnotationUse entityAnnotation = codeGenerator.addAnnotation(entityClass, Entity.class);
         entityAnnotation.param("name", entityClass.name());
+
+        final JAnnotationUse annotateCache = codeGenerator.addAnnotation(entityClass, Cache.class) ;
+        annotateCache.param("usage", CacheConcurrencyStrategy.READ_WRITE);
 
         addIndexAnnotations(bo, entityClass);
         addUniqueConstraintAnnotations(bo, entityClass);
@@ -175,6 +180,12 @@ public class EntityCodeGenerator {
         final JAnnotationUse nameQueryAnnotation = valueArray.annotate(NamedQuery.class);
         nameQueryAnnotation.param("name", entityClass.name() + "." + name);
         nameQueryAnnotation.param("query", content);
+
+        final JAnnotationArrayMember hintsAnnotation = nameQueryAnnotation.paramArray("hints") ;
+        final JAnnotationUse hintAnnotation =  hintsAnnotation.annotate(QueryHint.class);
+        hintAnnotation.param("name", "javax.persistence.Cacheable");
+        hintAnnotation.param("value", "true");
+
     }
 
     private void validateClassNotExistsInRuntime(final String qualifiedName) {
@@ -277,6 +288,9 @@ public class EntityCodeGenerator {
             final JAnnotationUse collectionAnnotation = codeGenerator.addAnnotation(fieldVar, ElementCollection.class);
             collectionAnnotation.param("fetch", FetchType.EAGER);
             codeGenerator.addAnnotation(fieldVar, OrderColumn.class);
+
+            final JAnnotationUse annotateCache = codeGenerator.addAnnotation(fieldVar, Cache.class) ;
+            annotateCache.param("usage", CacheConcurrencyStrategy.READ_WRITE);
         }
         final JAnnotationUse columnAnnotation = codeGenerator.addAnnotation(fieldVar, Column.class);
         columnAnnotation.param("name", sfield.getName().toUpperCase());
@@ -318,6 +332,8 @@ public class EntityCodeGenerator {
         final JMethod getter = codeGenerator.addGetter(entityClass, fieldVar);
         if (field instanceof RelationField && ((RelationField) field).isLazy()) {
             getter.annotate(LazyLoaded.class);
+            final JAnnotationUse annotateCache = getter.annotate(Cache.class) ;
+            annotateCache.param("usage", CacheConcurrencyStrategy.READ_WRITE);
         }
     }
 
@@ -350,3 +366,4 @@ public class EntityCodeGenerator {
     }
 
 }
+
